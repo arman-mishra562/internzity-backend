@@ -1,5 +1,4 @@
 import { Router } from "express";
-import asyncHandler from 'express-async-handler';
 import {
   register,
   verifyEmail,
@@ -10,10 +9,10 @@ import {
 
 const router = Router();
 
-router.post('/register', asyncHandler(register));
-router.get('/verify', asyncHandler(verifyEmail));
-router.post('/resend-verification', asyncHandler(resendVerification));
-router.post('/login', asyncHandler(login));
-router.post('/logout', asyncHandler(logout));
+router.post('/register', register);
+router.get('/verify', verifyEmail);
+router.post('/resend-verification', resendVerification);
+router.post('/login', login);
+router.post('/logout', logout);
 
 export default router;
