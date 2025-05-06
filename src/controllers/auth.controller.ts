@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction} from 'express';
 import bcrypt from 'bcryptjs';
 import prisma from '../config/prisma';
 import transporter from '../config/mailer';
@@ -7,7 +7,7 @@ import { generateVerificationEmail } from '../utils/emailTemplates';
 import { generateAuthToken } from '../utils/token';
 import { registerSchema, loginSchema, verifySchema, resendSchema } from '../schemas/auth.schema';
 
-export const register = async (req: Request, res: Response) => {
+export const register = async (req: Request, res: Response, next: NextFunction ) => {
   const parse = registerSchema.safeParse(req.body);
   if (!parse.success) {
     return res.status(400).json({ errors: parse.error.flatten().fieldErrors });
