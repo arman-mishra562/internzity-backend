@@ -4,6 +4,9 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
 import authRoutes from './routes/auth.route';
+import adminRoutes from './routes/admin.route';
+import instructorRoutes from "./routes/instructor.route";
+import courseRoutes from './routes/course.route';
 
 dotenv.config();
 const app = express();
@@ -13,6 +16,9 @@ app.use(cors());
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
+app.use("/api/instructor", instructorRoutes);
+app.use('/api/courses', courseRoutes);
 
 // Health check route
 app.get('/health', (req, res) => {

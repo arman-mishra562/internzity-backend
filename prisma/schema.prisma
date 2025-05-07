@@ -21,6 +21,126 @@ model User {
   isEmailVerified   Boolean  @default(false)
   emailToken        String?  // for email verification
   emailTokenExpiry  DateTime?
+  isAdmin           Boolean       @default(false)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+
+  // back-relations:
+  instructors       Instructor[]      // record per instructor
+  enrollments       Enrollment[]      // courses user bought
+  wishlists         Wishlist[]        // courses user saved
+  notes             Note[]            // lecture notes by user
+}
+// A “stream” or category for courses
+model Stream {
+  id      String   @id @default(cuid())
+  name    String   @unique
+  courses Course[]
+}
+
+// Instructors (who must be verified by Admin)
+model Instructor {
+  id             String   @id @default(cuid())
+  user           User     @relation(fields: [userId], references: [id])
+  userId         String   @unique
+  bio            String     
+  expertise      String[]
+  isVerified     Boolean  @default(false)
+  appliedAt      DateTime @default(now())
+  courses        CourseInstructor[]
+}
+
+// Courses
+model Course {
+  id               String    @id @default(cuid())
+  title            String
+  description      String
+  type             CourseType
+  priceCents       Int        // price in cents
+  stream           Stream     @relation(fields: [streamId], references: [id])
+  streamId         String
+  instructors      CourseInstructor[]
+  enrollments      Enrollment[]
+  wishlists        Wishlist[]
+  modules          Module[]   // only for self-paced
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+}
+
+// Join table: a course can have many instructors
+model CourseInstructor {
+  id            String     @id @default(cuid())
+  course        Course     @relation(fields: [courseId], references: [id])
+  courseId      String
+  instructor    Instructor @relation(fields: [instructorId], references: [id])
+  instructorId  String
+  @@unique([courseId, instructorId])
+}
+
+// Enrollment records when a user purchases or enrolls
+model Enrollment {
+  id         String   @id @default(cuid())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  course     Course   @relation(fields: [courseId], references: [id])
+  courseId   String
+  purchasedAt DateTime @default(now())
+}
+
+// Wishlists: users can save courses
+model Wishlist {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  course    Course   @relation(fields: [courseId], references: [id])
+  courseId  String
+  savedAt   DateTime @default(now())
+  @@unique([userId, courseId])
+}
+
+// Self-paced modules
+model Module {
+  id          String      @id @default(cuid())
+  title       String
+  course      Course      @relation(fields: [courseId], references: [id])
+  courseId    String
+  lectures    Lecture[]
+  createdAt   DateTime    @default(now())
+}
+
+// Lectures within modules
+model Lecture {
+  id          String      @id @default(cuid())
+  title       String
+  videoUrl    String
+  module      Module      @relation(fields: [moduleId], references: [id])
+  moduleId    String
+  assignments Assignment[]
+  notes       Note[]
+}
+
+// Assignments for lectures
+model Assignment {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  lecture     Lecture  @relation(fields: [lectureId], references: [id])
+  lectureId   String
+}
+
+// User notes on lectures
+model Note {
+  id         String   @id @default(cuid())
+  content    String
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  lecture    Lecture  @relation(fields: [lectureId], references: [id])
+  lectureId  String
+  createdAt  DateTime @default(now())
+}
+
+// Enum for course type
+enum CourseType {
+  LIVE
+  SELF_PACED
 }
