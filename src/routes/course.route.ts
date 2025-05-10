@@ -17,17 +17,17 @@ const router = Router();
 
 // Streams
 router.get('/streams', listStreams);
-router.post('/streams', isAuthenticated, isAdmin, validateRequest(createStreamSchema), createStream);
+router.post('/streams', isAuthenticated, isAdmin, validateRequest({ body: createStreamSchema }), createStream);
 
 // Courses
 router.get('/', listCourses);
 router.get('/:id', validateRequest(courseParamSchema), getCourse);
 
 // Create course (admin only)
-router.post('/', isAuthenticated, isAdmin, validateRequest(createCourseSchema), createCourse);
+router.post('/', isAuthenticated, isAdmin, validateRequest({ body: createCourseSchema }), createCourse);
 
 // Enroll & Wishlist (authenticated users)
-router.post('/:id/enroll', isAuthenticated, validateRequest(courseParamSchema), enrollCourse);
-router.post('/:id/wishlist', isAuthenticated, validateRequest(courseParamSchema), wishlistCourse);
+router.post('/:id/enroll', isAuthenticated, validateRequest({ params: courseParamSchema }), enrollCourse);
+router.post('/:id/wishlist', isAuthenticated, validateRequest({ params: courseParamSchema }), wishlistCourse);
 
 export default router;

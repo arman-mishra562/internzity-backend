@@ -52,13 +52,41 @@ export const createCourse = async (req: Request, res: Response) => {
 export const enrollCourse = async (req: Request, res: Response) => {
   const userId = (req as any).user.id;
   const { id: courseId } = req.params;
-  const enrollment = await prisma.enrollment.create({ data: { userId, courseId } });
-  res.status(201).json(enrollment);
+
+  // 1. Check for existing enrollment
+  const existing = await prisma.enrollment.findUnique({
+    where: { userId_courseId: { userId, courseId } }
+  });
+
+  if (existing) {
+    // Already enrolled → return 200 or 409 as you prefer
+    return res.status(200).json({ message: 'Already enrolled', data: existing });
+  }
+
+  // 2. Otherwise create a new one
+  const enrollment = await prisma.enrollment.create({
+    data: { userId, courseId }
+  });
+  return res.status(201).json(enrollment);
 };
 
 export const wishlistCourse = async (req: Request, res: Response) => {
   const userId = (req as any).user.id;
   const { id: courseId } = req.params;
-  const wish = await prisma.wishlist.create({ data: { userId, courseId } });
-  res.status(201).json(wish);
+
+  // 1. Check for existing wishlist entry
+  const existing = await prisma.wishlist.findUnique({
+    where: { userId_courseId: { userId, courseId } }
+  });
+
+  if (existing) {
+    // Already in wishlist → idempotent response
+    return res.status(200).json({ message: 'Already in wishlist', data: existing });
+  }
+
+  // 2. Otherwise create a new one
+  const wish = await prisma.wishlist.create({
+    data: { userId, courseId }
+  });
+  return res.status(201).json(wish);
 };

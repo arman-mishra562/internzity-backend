@@ -85,6 +85,8 @@ model Enrollment {
   course     Course   @relation(fields: [courseId], references: [id])
   courseId   String
   purchasedAt DateTime @default(now())
+
+  @@unique([userId, courseId])
 }
 
 // Wishlists: users can save courses
@@ -95,6 +97,7 @@ model Wishlist {
   course    Course   @relation(fields: [courseId], references: [id])
   courseId  String
   savedAt   DateTime @default(now())
+  
   @@unique([userId, courseId])
 }
 

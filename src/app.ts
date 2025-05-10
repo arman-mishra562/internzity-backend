@@ -7,6 +7,8 @@ import authRoutes from './routes/auth.route';
 import adminRoutes from './routes/admin.route';
 import instructorRoutes from "./routes/instructor.route";
 import courseRoutes from './routes/course.route';
+import moduleRoutes from "./routes/module.route";
+import lectureRoutes from "./routes/lecture.route";
 
 dotenv.config();
 const app = express();
@@ -19,6 +21,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use("/api/instructor", instructorRoutes);
 app.use('/api/courses', courseRoutes);
+app.use("/api/modules", moduleRoutes);
+app.use("/api/lectures", lectureRoutes);
 
 // Health check route
 app.get('/health', (req, res) => {
