@@ -1,6 +1,6 @@
 import { Router } from "express";
 import validateRequest from "../middlewares/validateRequest";
-import { isAuthenticated, AuthRequest } from "../middlewares/auth.middleware";
+import { isAuthenticated } from "../middlewares/auth.middleware";
 import { isInstructor } from '../middlewares/instructor.middleware';
 import {
   createModule,

@@ -1,41 +1,51 @@
+
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 import { verifyAuthToken } from '../utils/token';
 import prisma from '../config/prisma';
 
-// extend Express Request to include authenticated user payload
-export interface AuthRequest extends Request {
-  user: {
-    id: string;
-  };
+// 1) Globally augment Express.Request so TS knows about `req.user`
+declare global {
+  namespace Express {
+    interface Request {
+      user?: { id: string };
+    }
+  }
 }
 
-// Middleware to protect routes and attach `req.user`
+// 2) Protect routes & populate req.user
 export const isAuthenticated: RequestHandler = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
+  req,
+  res,
+  next
 ): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      res.status(401).json({ error: 'Missing or invalid token' });
+      res.status(401).json({ error: 'Unauthorized: Missing or malformed token' });
       return;
     }
 
-    const token = authHeader.split(' ')[1];
-    const payload = verifyAuthToken(token);
+    const token = authHeader.slice(7).trim(); // remove "Bearer "
+    let payload;
+    try {
+      payload = verifyAuthToken(token);
+    } catch (_err) {
+      res.status(401).json({ error: 'Unauthorized: Invalid or expired token' });
+      return;
+    }
 
-    // Ensure user still exists
+    // 3) Confirm user still exists
     const user = await prisma.user.findUnique({ where: { id: payload.sub } });
     if (!user) {
-      res.status(401).json({ error: 'User not found' });
+      res.status(401).json({ error: 'Unauthorized: User no longer exists' });
       return;
     }
 
-    // attach user to request
-    (req as AuthRequest).user = { id: payload.sub };
+    // 4) Attach to request
+    req.user = { id: payload.sub };
     next();
-  } catch (error) {
-    next(error);
+  } catch (err) {
+    console.error('Error in isAuthenticated middleware:', err);
+    next(err);
   }
 };

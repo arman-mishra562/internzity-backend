@@ -1,16 +1,21 @@
-import { Response, NextFunction } from "express";
-import { AuthRequest } from "../middlewares/auth.middleware";
+import { Request, Response, NextFunction, RequestHandler } from "express";
 import prisma from "../config/prisma";
 
-export async function createAssignment(
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
+export const createAssignment: RequestHandler = async (
+  req,
+  res,
+  next
+): Promise<void> => {
   try {
     const { lectureId, title, description } = req.body;
+    if (!lectureId || !title || !description) {
+      res.status(400).json({ error: "lectureId, title, and description are required" });
+      return;
+    }
 
-    // optional: use req.user!.id to further authorize…
+    // Optional: enforce that req.user exists / owns this lecture
+    // const userId = req.user!.id;
+
     const assignment = await prisma.assignment.create({
       data: { lectureId, title, description },
     });
@@ -19,24 +24,26 @@ export async function createAssignment(
   } catch (err) {
     next(err);
   }
-}
+};
 
-export async function listAssignmentsForLecture(
-  req: AuthRequest,  // or plain Request if you prefer
-  res: Response,
-  next: NextFunction
-): Promise<void> {
+export const listAssignmentsForLecture: RequestHandler = async (
+  req,
+  res,
+  next
+): Promise<void> => {
   try {
     const lectureId = req.params.lectureId;
     if (!lectureId) {
-      res.status(400).json({ error: "Missing lectureId in URL" });
+      res.status(400).json({ error: "Missing lectureId in URL params" });
       return;
     }
+
     const assignments = await prisma.assignment.findMany({
       where: { lectureId },
     });
+
     res.json(assignments);
   } catch (err) {
     next(err);
   }
-}
+};

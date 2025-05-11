@@ -1,4 +1,4 @@
-// src/app.ts
+import { NextFunction, Request, Response } from "express";
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -45,11 +45,10 @@ app.use((req, res) => {
 });
 
 // ——— Global Error Handler———
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Internal Server Error' });
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  console.error(err);
+  res.status(500).json({ message: "Internal Server Error" });
 });
-
 
 // Start server
 const PORT = process.env.PORT || 5000;

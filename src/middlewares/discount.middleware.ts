@@ -1,70 +1,72 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction, RequestHandler } from 'express';
 import prisma from '../config/prisma';
 
-export const canManageDiscount = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const canManageDiscount: RequestHandler = async (
+  req,
+  res,
+  next
+): Promise<void> => {
   try {
-    const userId = (req as any).user?.id;
+    // 1) Must be logged in
+    const userId = req.user?.id;
     if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized: No user ID' });
+      res.status(401).json({ error: 'Unauthorized: missing user' });
+      return;
     }
 
-    // 1) Admins can always proceed
+    // 2) Admins bypass all checks
     const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (user?.isAdmin) return next();
+    if (user?.isAdmin) {
+      next();
+      return;
+    }
 
-    // 2) Determine the courseId
-    let courseId: string | undefined;
-
+    // 3) Determine target courseId
+    let courseId: string;
     if (req.method === 'POST') {
-      courseId = req.body?.courseId;
+      courseId = (req.body as { courseId?: string }).courseId!;
       if (!courseId) {
-        return res.status(400).json({ error: 'Missing courseId in request body' });
+        res.status(400).json({ error: 'Bad Request: missing courseId in body' });
+        return;
       }
     } else {
       const discountId = req.params.id;
       if (!discountId) {
-        return res.status(400).json({ error: 'Missing discount ID in request params' });
+        res.status(400).json({ error: 'Bad Request: missing discount ID in params' });
+        return;
       }
-
       const discount = await prisma.discount.findUnique({
         where: { id: discountId },
         select: { courseId: true },
       });
-
       if (!discount) {
-        return res.status(404).json({ error: 'Discount not found' });
+        res.status(404).json({ error: 'Not Found: discount does not exist' });
+        return;
       }
-
       courseId = discount.courseId;
     }
 
-    // 3) Verify instructor ownership
-    const instructor = await prisma.instructor.findFirst({
+    // 4) Verify the user is a verified instructor on that course
+    const instrLink = await prisma.courseInstructor.findFirst({
       where: {
-        userId,
-        isVerified: true,
-        courses: {
-          some: {
-            courseId,
-          },
+        courseId,
+        instructor: {
+          userId,
+          isVerified: true,
         },
       },
     });
-
-    if (!instructor) {
-      return res.status(403).json({
-        error: 'Permission denied: Not a verified instructor for this course',
-      });
+    if (!instrLink) {
+      res
+        .status(403)
+        .json({ error: 'Forbidden: you’re not a verified instructor for this course' });
+      return;
     }
 
-    // 4) Authorized
-    return next();
-  } catch (error) {
-    console.error('Error in canManageDiscount middleware:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    // 5) Authorized!
+    next();
+  } catch (err) {
+    console.error('canManageDiscount error:', err);
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
