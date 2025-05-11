@@ -21,7 +21,11 @@ router.post('/streams', isAuthenticated, isAdmin, validateRequest({ body: create
 
 // Courses
 router.get('/', listCourses);
-router.get('/:id', validateRequest(courseParamSchema), getCourse);
+router.get(
+  '/:id',
+  validateRequest({ params: courseParamSchema }),
+  getCourse
+);
 
 // Create course (admin only)
 router.post('/', isAuthenticated, isAdmin, validateRequest({ body: createCourseSchema }), createCourse);

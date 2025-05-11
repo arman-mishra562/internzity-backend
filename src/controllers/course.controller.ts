@@ -13,10 +13,26 @@ export const createStream = async (req: Request, res: Response) => {
 };
 
 export const listCourses = async (_req: Request, res: Response) => {
+  const now = new Date();
   const courses = await prisma.course.findMany({
-    include: { stream: true, instructors: { include: { instructor: { include: { user: true } } } } },
+    include: {
+      stream: true,
+      instructors: { include: { instructor: { include: { user: true } } } },
+      discounts: true,  // include related discounts
+    },
   });
-  res.json(courses);
+
+  // Apply the best active discount to each course
+  const result = courses.map((c) => {
+    const active = c.discounts
+      .filter(d => !d.validUntil || d.validUntil > now)
+      .sort((a, b) => b.percent - a.percent)[0];
+    const discountPercent = active?.percent ?? 0;
+    const discountedPrice = Math.round(c.priceCents * (100 - discountPercent) / 100);
+    return { ...c, discountPercent, discountedPrice };
+  });
+
+  res.json(result);
 };
 
 export const getCourse = async (req: Request, res: Response) => {

@@ -5,8 +5,10 @@ export const createModuleSchema = z.object({
     title: z.string().min(1, 'Module title is required'),
   });
 
-export const moduleParamSchema = z.object({
-  
-    moduleId: z.string().cuid("Invalid module ID"),
-  
+export const courseParamsSchema = z.object({
+  courseId: z.string().cuid('Invalid course ID'),
+});
+
+export const moduleParamsSchema = z.object({
+  moduleId: z.string().cuid('Invalid module ID'),
 });

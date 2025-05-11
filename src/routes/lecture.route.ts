@@ -7,20 +7,20 @@ import {
   createLecture,
   listLecturesForModule,
 } from "../controllers/lecture.controller";
-import { createLectureSchema, lectureParamSchema } from "../schemas/lecture.schema";
+import { createLectureSchema, moduleParamsSchema } from "../schemas/lecture.schema";
 
 const router = Router();
 
 router.post(
   "/",
-  isAuthenticated,
+  isAuthenticated, isInstructor,
   validateRequest({ body: createLectureSchema }),
   createLecture
 );
 
 router.get(
   "/module/:moduleId",
-  validateRequest({ params: lectureParamSchema.extend({ params: z.object({ moduleId: z.string().cuid() }) }) }),
+  validateRequest({ params: moduleParamsSchema }),
   listLecturesForModule
 );
 

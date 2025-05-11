@@ -63,6 +63,7 @@ model Course {
   enrollments      Enrollment[]
   wishlists        Wishlist[]
   modules          Module[]   // only for self-paced
+  discounts        Discount[]
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
 }
@@ -139,6 +140,17 @@ model Note {
   userId     String
   lecture    Lecture  @relation(fields: [lectureId], references: [id])
   lectureId  String
+  createdAt  DateTime @default(now())
+}
+
+model Discount {
+  id         String   @id @default(cuid())
+  course     Course   @relation(fields: [courseId], references: [id])
+  courseId   String
+  // Discount as a percentage (e.g. 20 for 20% off)
+  percent    Int      @default(0)
+  // Optional expiry date (null = no expiry)
+  validUntil DateTime?
   createdAt  DateTime @default(now())
 }
 

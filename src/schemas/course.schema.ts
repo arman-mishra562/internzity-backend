@@ -12,3 +12,6 @@ export const createCourseSchema = z.object({
   streamId: z.string().cuid('Invalid stream ID'),
   instructorIds: z.array(z.string().cuid()).min(1, 'At least one instructor required'),
 });
+export const courseParamSchema = z.object({
+  id: z.string().cuid('Invalid course ID'),
+});

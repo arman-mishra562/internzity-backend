@@ -6,6 +6,9 @@ export const createLectureSchema = z.object({
   videoUrl: z.string().url('Must be a valid URL'),
 });
 
+export const moduleParamsSchema = z.object({
+  moduleId: z.string().cuid('Invalid module ID'),
+});
 
 export const lectureParamSchema = z.object({
     lectureId: z.string().cuid("Invalid lecture ID"),
