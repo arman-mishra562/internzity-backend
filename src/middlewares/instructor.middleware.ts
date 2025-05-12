@@ -1,14 +1,14 @@
-import { RequestHandler } from 'express';
-import prisma from '../config/prisma';
+import { RequestHandler } from "express";
+import prisma from "../config/prisma";
 
-export const isInstructor: RequestHandler = async (req, res, next) => {
+export const isInstructor: RequestHandler = async (req, res, next): Promise<void> => {
   try {
     // 1) Grab current user ID (auth middleware should've set req.user)
-    const userId = req.user?.id;
-    if (!userId) {
-      res.status(401).json({ error: 'Unauthorized: No user ID' });
+    if (!req.user?.id) {
+      res.status(401).json({ error: "Unauthorized: Missing user" });
       return;
     }
+    const userId = req.user.id;
 
     // 2) Look up instructor record
     const instructor = await prisma.instructor.findUnique({
@@ -19,17 +19,17 @@ export const isInstructor: RequestHandler = async (req, res, next) => {
     if (!instructor || !instructor.isVerified) {
       res
         .status(403)
-        .json({ error: 'Forbidden: You must be a verified instructor' });
+        .json({ error: "Forbidden: Must be a verified instructor" });
       return;
     }
 
-    // 4) Attach instructorId for downstream controllers
+    // 4) Attach instructorId for downstream
     req.instructorId = instructor.id;
 
     // 5) All good → next()
     next();
   } catch (err) {
-    console.error('Error in isInstructor middleware:', err);
+    console.error("Error in isInstructor middleware:", err);
     next(err);
   }
 };

@@ -1,33 +1,29 @@
+import { RequestHandler } from "express";
+import prisma from "../config/prisma";
 
-import { RequestHandler } from 'express';
-import prisma from '../config/prisma';
-import { AuthRequest } from './auth.middleware';  // wherever you declared it
-
-export const isAdmin: RequestHandler = async (
-  req,
-  res,
-  next
-): Promise<void> => {
+export const isAdmin: RequestHandler = async (req, res, next): Promise<void> => {
   try {
-    // cast to AuthRequest to get at req.user.id
-    const authReq = req as AuthRequest;
-
-    if (!authReq.user?.id) {
-      res.status(401).json({ error: 'Unauthorized' });
+    // 1) Ensure auth middleware has run and attached req.user
+    if (!req.user?.id) {
+      res.status(401).json({ error: "Unauthorized: no user on request" });
       return;
     }
 
+    // 2) Fetch from DB to double-check isAdmin flag
     const user = await prisma.user.findUnique({
-      where: { id: authReq.user.id },
+      where: { id: req.user.id },
+      select: { isAdmin: true },
     });
 
     if (!user?.isAdmin) {
-      res.status(403).json({ error: 'Admin only' });
+      res.status(403).json({ error: "Forbidden: admin only" });
       return;
     }
 
+    // 3) OK!
     next();
   } catch (err) {
+    console.error("isAdmin middleware error:", err);
     next(err);
   }
 };

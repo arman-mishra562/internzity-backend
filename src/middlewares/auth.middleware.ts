@@ -1,4 +1,3 @@
-
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 import { verifyAuthToken } from '../utils/token';
 import prisma from '../config/prisma';
