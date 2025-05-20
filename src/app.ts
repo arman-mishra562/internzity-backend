@@ -14,6 +14,9 @@ import noteRoutes from './routes/note.route';
 import paymentRoutes from './routes/payment.route';
 import discountRoutes from './routes/discount.route';
 import homeRoutes from './routes/home.route';
+import streakRoutes from './routes/streak.route';
+
+
 
 dotenv.config();
 const app = express();
@@ -38,6 +41,7 @@ app.use('/api/notes', noteRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/discounts', discountRoutes);
 app.use('/api/home', homeRoutes);
+app.use('/api/user/streak', streakRoutes);
 
 // ——— 404 Handler ———
 app.use((req, res) => {

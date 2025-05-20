@@ -7,3 +7,10 @@ export const generateVerificationEmail = (link: string) => {
     `;
   };
   
+export function generateResetEmail(link: string) {
+  return `
+    <h2>Password Reset Request</h2>
+    <p>Click the link below to reset your password (valid for 1 hour):</p>
+    <a href="${link}">Reset your Password</a>
+  `;
+}

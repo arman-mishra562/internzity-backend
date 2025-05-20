@@ -3,7 +3,10 @@ import bcrypt from 'bcryptjs';
 import prisma from '../config/prisma';
 import transporter from '../config/mailer';
 import { generateVerificationToken } from '../utils/generateVerificationToken';
+import { generateUserId } from '../utils/generateUserId';
 import { generateVerificationEmail } from '../utils/emailTemplates';
+import { generateResetToken } from '../utils/generateResetToken';
+import { generateResetEmail } from '../utils/emailTemplates';
 import { generateAuthToken } from '../utils/token';
 import { registerSchema, loginSchema, verifySchema, resendSchema } from '../schemas/auth.schema';
 
@@ -26,15 +29,16 @@ export const register: RequestHandler = async (
       res.status(409).json({ error: 'Email already in use' });
       return;
     }
-
+    
     const hashed = await bcrypt.hash(password, 10);
     const token = generateVerificationToken(email);
     const expiry = new Date(Date.now() + 24 * 3600 * 1000);
-
+    
+    const newId = generateUserId();
     await prisma.user.create({
-      data: { name, email, password: hashed, emailToken: token, emailTokenExpiry: expiry },
+      data: { id: newId, name, email, password: hashed, emailToken: token, emailTokenExpiry: expiry },
     });
-
+    
     const link = `${process.env.BACKEND_URL}/api/auth/verify?token=${token}`;
     await transporter.sendMail({
       from: `"InternZity" <${process.env.SMTP_USER}>`,
@@ -157,6 +161,66 @@ export const login: RequestHandler = async (
   } catch (err) {
     next(err);
   }
+};
+
+//  Forgot Password
+export const forgotPassword: RequestHandler = async ( req: Request,
+  res: Response,
+  next: NextFunction): Promise<void> => {
+  try {
+    const { email } = req.body;
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) {
+    res.json({ message: 'If that email is registered, you’ll receive a reset link.' });
+  }
+  const token = generateResetToken(email);
+  const expiry = new Date(Date.now() + 3600 * 1000); // 1 hour
+  await prisma.user.update({
+    where: { id: user!.id },
+    data: { resetToken: token, resetTokenExpiry: expiry },
+  });
+  const link = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+  await transporter.sendMail({
+    from: `"InternZity" <${process.env.SMTP_USER}>`,
+    to: email,
+    subject: 'Reset Your Password',
+    html: generateResetEmail(link),
+  });
+  res.json({ message: 'If that email is registered, you’ll receive a reset link.' });
+  } catch (err) {
+    next(err)
+  }
+};
+
+// Reset Password
+export const resetPassword: RequestHandler = async (req: Request,
+  res: Response,
+  next: NextFunction): Promise<void> => {
+    try {
+      const { token, newPassword } = req.body;
+      // find user with matching token
+      const user = await prisma.user.findFirst({
+        where: {
+          resetToken: token,
+          resetTokenExpiry: { gt: new Date() },
+        },
+      });
+      if (!user) {
+        res.status(400).json({ error: 'Invalid or expired token' });
+      }
+      const hashed = await bcrypt.hash(newPassword, 10);
+      await prisma.user.update({
+        where: { id: user!.id },
+        data: {
+          password: hashed,
+          resetToken: null,
+          resetTokenExpiry: null,
+        },
+      });
+    res.json({ message: 'Password has been reset successfully' });
+    } catch (err) {
+      next(err)
+    }
 };
 
 // Controller for user logout
