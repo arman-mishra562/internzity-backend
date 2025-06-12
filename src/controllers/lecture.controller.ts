@@ -1,24 +1,22 @@
 import { Request, Response, NextFunction, RequestHandler } from "express";
 import prisma from "../config/prisma";
 
-// createLecture now matches RequestHandler and propagates errors via next()
+// create a Lecture
 export const createLecture: RequestHandler = async (
   req,
   res,
   next
 ): Promise<void> => {
   try {
-    // req.body typed by your validation middleware
     const { moduleId, title, videoUrl } = req.body;
 
-    // instructorId injected by your auth middleware (make sure it's declared in Express.Request)
     const instructorId = (req as any).instructorId as string;
     if (!instructorId) {
       res.status(401).json({ error: "Unauthorized: Missing instructorId" });
       return;
     }
 
-    // 1) Look up the module (and its course → instructors)
+    // 1) Look up the module 
     const module = await prisma.module.findUnique({
       where: { id: moduleId },
       include: { course: { include: { instructors: true } } },
@@ -44,13 +42,25 @@ export const createLecture: RequestHandler = async (
       data: { moduleId, title, videoUrl },
     });
 
+    // 4) Update media linkiage
+    if (videoUrl) {
+      await prisma.media.update({
+        where: { key: videoUrl },
+        data: {
+          entity: 'Lecture',
+          entityId: lecture.id,
+          linkedAt: new Date(),
+        },
+      });
+    }
+
     res.status(201).json(lecture);
   } catch (err) {
     next(err);
   }
 };
 
-// listLecturesForModule also follows RequestHandler pattern
+// list Lectures For Module 
 export const listLecturesForModule: RequestHandler = async (
   req,
   res,

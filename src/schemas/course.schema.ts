@@ -11,6 +11,7 @@ export const createCourseSchema = z.object({
   priceCents: z.number().int().nonnegative('Price must be non-negative'),
   streamId: z.string().cuid('Invalid stream ID'),
   instructorIds: z.array(z.string().cuid()).min(1, 'At least one instructor required'),
+  thumbnail_url: z.string().optional(),
 });
 export const courseParamSchema = z.object({
   id: z.string().cuid('Invalid course ID'),

@@ -16,6 +16,7 @@ datasource db {
 model User {
   id                String   @id
   name              String
+  profile_pic_url   String?
   email             String   @unique
   password          String
   isEmailVerified   Boolean  @default(false)
@@ -37,6 +38,7 @@ model User {
   wishlists         Wishlist[]        // courses user saved
   notes             Note[]            // lecture notes by user
 }
+
 // A “stream” or category for courses
 model Stream {
   id      String   @id @default(cuid())
@@ -60,8 +62,11 @@ model Instructor {
 model Course {
   id               String    @id @default(cuid())
   title            String
+  thumbnail_url    String?
   description      String
   type             CourseType
+  StartDate        DateTime?
+  isPopular        Boolean    @default(false)
   priceCents       Int        // price in cents
   stream           Stream     @relation(fields: [streamId], references: [id])
   streamId         String
@@ -122,7 +127,7 @@ model Module {
 model Lecture {
   id          String      @id @default(cuid())
   title       String
-  videoUrl    String
+  videoUrl    String?
   module      Module      @relation(fields: [moduleId], references: [id])
   moduleId    String
   assignments Assignment[]
@@ -164,4 +169,17 @@ model Discount {
 enum CourseType {
   LIVE
   SELF_PACED
+}
+
+// Orphan-Safeguard Model
+model Media {
+  id         String   @id @default(cuid())
+  key        String   @unique                  // S3 object key, e.g. "media/xyz.jpg"
+  type       String                             // “profile”, “thumbnail”, “lecture_video”, etc.
+  entity     String?                            // name of the owning entity 
+  entityId   String?                            // the owning record’s ID
+  uploadedAt DateTime @default(now())
+  linkedAt   DateTime?                          // when we attached it to an entity
+
+  @@index([type])
 }

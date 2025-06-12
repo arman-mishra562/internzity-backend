@@ -18,3 +18,11 @@ export const verifySchema = z.object({
 export const resendSchema = z.object({
   email: z.string().email('Invalid email'),
 });
+
+export const linkProfilePicSchema = z.object({
+  key: z.string().min(1, 'Media key is required'),
+});
+
+export const deleteAccountSchema = z.object({
+  password: z.string().min(1, 'Password confirmation is required'),
+});

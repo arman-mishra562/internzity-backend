@@ -6,10 +6,14 @@ import {
   login,
   logout,
   forgotPassword,
-  resetPassword
+  resetPassword,
+  linkProfilePic,
+  deleteUser
 } from '../controllers/auth.controller';
 import validateRequest from '../middlewares/validateRequest';
+import { isAuthenticated } from "../middlewares/auth.middleware";
 import { forgotPasswordSchema, resetPasswordSchema } from '../schemas/password.schema';
+import { linkProfilePicSchema, deleteAccountSchema } from "../schemas/auth.schema";
 
 const router = Router();
 
@@ -27,6 +31,19 @@ router.post(
   '/reset-password',
   validateRequest({ body: resetPasswordSchema }),
   resetPassword
+);
+router.post(
+  '/profile-pic',
+  isAuthenticated,
+  validateRequest({ body: linkProfilePicSchema }),
+  linkProfilePic
+);
+
+router.delete(
+  '/delete-account',
+  isAuthenticated,
+  validateRequest({ body: deleteAccountSchema }),
+  deleteUser
 );
 
 export default router;

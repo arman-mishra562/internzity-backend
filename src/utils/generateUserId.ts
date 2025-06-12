@@ -1,10 +1,6 @@
-import { customAlphabet } from 'nanoid';
+import { v4 as uuidv4 } from 'uuid';
 
-// Uppercase letters + digits
-const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-const nanoid = customAlphabet(ALPHABET, 6);
-
-/*e.g. INTZTY00 + 'AA0075'*/
 export function generateUserId(): string {
-  return `INTZTY00${nanoid()}`;
+	const suffix = uuidv4().replace(/-/g, '').slice(0, 6).toUpperCase();
+	return `${process.env.USERID_PREFIX}${suffix}`;
 }
