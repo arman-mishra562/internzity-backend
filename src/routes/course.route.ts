@@ -22,11 +22,12 @@ router.post('/streams', isAuthenticated, isAdmin, validateRequest({ body: create
 
 // Courses
 router.get('/', listCourses);
-router.get(
-  '/:id',
-  validateRequest({ params: courseParamSchema }),
-  getCourse
-);
+
+// Wishlist (authenticated users)
+router.get('/wishlist', isAuthenticated, getWishlistedCourses);
+
+// Course by ID
+router.get('/:id', validateRequest({ params: courseParamSchema }), getCourse);
 
 // Create course (admin only)
 router.post('/', isAuthenticated, isAdmin, validateRequest({ body: createCourseSchema }), createCourse);
@@ -34,6 +35,5 @@ router.post('/', isAuthenticated, isAdmin, validateRequest({ body: createCourseS
 // Enroll & Wishlist (authenticated users)
 router.post('/:id/enroll', isAuthenticated, validateRequest({ params: courseParamSchema }), enrollCourse);
 router.post('/:id/wishlist', isAuthenticated, validateRequest({ params: courseParamSchema }), wishlistCourse);
-router.get('/wishlist', isAuthenticated, getWishlistedCourses);
 
 export default router;
