@@ -10,6 +10,7 @@ import {
   createCourse,
   enrollCourse,
   wishlistCourse,
+  getWishlistedCourses,
 } from '../controllers/course.controller';
 import { createStreamSchema, createCourseSchema, courseParamSchema } from '../schemas/course.schema';
 
@@ -33,5 +34,6 @@ router.post('/', isAuthenticated, isAdmin, validateRequest({ body: createCourseS
 // Enroll & Wishlist (authenticated users)
 router.post('/:id/enroll', isAuthenticated, validateRequest({ params: courseParamSchema }), enrollCourse);
 router.post('/:id/wishlist', isAuthenticated, validateRequest({ params: courseParamSchema }), wishlistCourse);
+router.get('/wishlist', isAuthenticated, getWishlistedCourses);
 
 export default router;
