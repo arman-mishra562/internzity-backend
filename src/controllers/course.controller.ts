@@ -335,3 +335,38 @@ export const getWishlistedCourses: RequestHandler = async (req, res, next) => {
 		next(err);
 	}
 };
+
+export const removeFromWishlist: RequestHandler<{ id: string }> = async (
+	req,
+	res,
+	next,
+) => {
+	try {
+		// 1) Ensure authenticated
+		if (!req.user?.id) {
+			res.status(401).json({ error: 'Unauthorized' });
+			return;
+		}
+		const userId = req.user.id;
+		const { id: courseId } = req.params;
+
+		// 2) Check if course exists in wishlist
+		const existing = await prisma.wishlist.findUnique({
+			where: { userId_courseId: { userId, courseId } },
+		});
+
+		if (!existing) {
+			res.status(404).json({ error: 'Course not found in wishlist' });
+			return;
+		}
+
+		// 3) Remove from wishlist
+		await prisma.wishlist.delete({
+			where: { userId_courseId: { userId, courseId } },
+		});
+
+		res.status(200).json({ message: 'Course removed from wishlist' });
+	} catch (err) {
+		next(err);
+	}
+};
