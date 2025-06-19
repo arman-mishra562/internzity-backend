@@ -5,15 +5,22 @@ import {
   // Stripe
   createStripePaymentIntent,
   confirmStripePayment,
+  createStripePaymentIntentMulti,
+  confirmStripePaymentMulti,
   // PayPal
   createPayPalOrder,
   capturePayPalOrder,
+  createPayPalOrderMulti,
+  capturePayPalOrderMulti,
   // Google Pay
-  createGooglePayOrder,
   processGooglePayPayment,
+  processGooglePayPaymentMulti,
+  confirmGooglePayPaymentMulti,
   // Razorpay
   createRazorpayOrder,
   captureRazorpayPayment,
+  createRazorpayOrderMulti,
+  captureRazorpayPaymentMulti,
   // Utility
   getTransactionById,
   getUserTransactions,
@@ -27,6 +34,7 @@ import {
   googlePayProcessSchema,
   razorpayCaptureSchema,
   refundSchema,
+  multiCoursePaymentSchema,
 } from '../schemas/payment.schema';
 
 const router = Router();
@@ -46,6 +54,20 @@ router.post(
   confirmStripePayment
 );
 
+router.post(
+  '/stripe/multi',
+  isAuthenticated,
+  validateRequest({ body: multiCoursePaymentSchema }),
+  createStripePaymentIntentMulti
+);
+
+router.post(
+  '/stripe/confirm-multi',
+  isAuthenticated,
+  validateRequest({ body: stripeConfirmSchema }),
+  confirmStripePaymentMulti
+);
+
 // PAYPAL PAYMENT ROUTES
 router.post(
   '/paypal/:courseId',
@@ -61,19 +83,40 @@ router.post(
   capturePayPalOrder
 );
 
-// GOOGLE PAY PAYMENT ROUTES
 router.post(
-  '/googlepay/:courseId',
+  '/paypal/multi',
   isAuthenticated,
-  validateRequest({ params: paymentParamsSchema }),
-  createGooglePayOrder
+  validateRequest({ body: multiCoursePaymentSchema }),
+  createPayPalOrderMulti
 );
 
+router.post(
+  '/paypal/capture-multi',
+  isAuthenticated,
+  validateRequest({ body: paypalCaptureSchema }),
+  capturePayPalOrderMulti
+);
+
+// GOOGLE PAY PAYMENT ROUTES
 router.post(
   '/googlepay/process',
   isAuthenticated,
   validateRequest({ body: googlePayProcessSchema }),
   processGooglePayPayment
+);
+
+router.post(
+  '/googlepay/process-multi',
+  isAuthenticated,
+  validateRequest({ body: googlePayProcessSchema }),
+  processGooglePayPaymentMulti
+);
+
+router.post(
+  '/googlepay/confirm-multi',
+  isAuthenticated,
+  validateRequest({ body: stripeConfirmSchema }),
+  confirmGooglePayPaymentMulti
 );
 
 // RAZORPAY PAYMENT ROUTES
@@ -89,6 +132,20 @@ router.post(
   isAuthenticated,
   validateRequest({ body: razorpayCaptureSchema }),
   captureRazorpayPayment
+);
+
+router.post(
+  '/razorpay/multi',
+  isAuthenticated,
+  validateRequest({ body: multiCoursePaymentSchema }),
+  createRazorpayOrderMulti
+);
+
+router.post(
+  '/razorpay/capture-multi',
+  isAuthenticated,
+  validateRequest({ body: razorpayCaptureSchema }),
+  captureRazorpayPaymentMulti
 );
 
 // UTILITY ROUTES
