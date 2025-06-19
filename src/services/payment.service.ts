@@ -63,7 +63,7 @@ export const paymentService = {
           status: TransactionStatus.COMPLETED,
           gatewayOrderId,
           gatewayPaymentId,
-          gatewayResponse,
+          gatewayResponse: gatewayResponse,
         },
       });
 
@@ -216,7 +216,10 @@ export const paymentService = {
     try {
       // Verify payment intent with Stripe
       const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-      if (paymentIntent.status !== 'succeeded') {
+      const paymentIntentData = (paymentIntent && typeof paymentIntent === 'object' && 'data' in paymentIntent)
+        ? (paymentIntent as any).data
+        : paymentIntent;
+      if (paymentIntentData.status !== 'succeeded') {
         throw new PaymentError('Payment not completed');
       }
       // Atomically complete all transactions and enrollments
@@ -229,8 +232,8 @@ export const paymentService = {
             data: {
               status: TransactionStatus.COMPLETED,
               gatewayOrderId: paymentIntentId,
-              gatewayPaymentId: paymentIntent.latest_charge as string,
-              gatewayResponse: paymentIntent,
+              gatewayPaymentId: paymentIntentData.latest_charge as string,
+              gatewayResponse: paymentIntentData,
             },
           });
           // Check if enrollment already exists
@@ -525,7 +528,10 @@ export const paymentService = {
     try {
       // Verify payment intent with Stripe
       const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-      if (paymentIntent.status !== 'succeeded') {
+      const paymentIntentData = (paymentIntent && typeof paymentIntent === 'object' && 'data' in paymentIntent)
+        ? (paymentIntent as any).data
+        : paymentIntent;
+      if (paymentIntentData.status !== 'succeeded') {
         throw new PaymentError('Payment not completed');
       }
       // Atomically complete all transactions and enrollments
@@ -538,8 +544,8 @@ export const paymentService = {
             data: {
               status: TransactionStatus.COMPLETED,
               gatewayOrderId: paymentIntentId,
-              gatewayPaymentId: paymentIntent.latest_charge as string,
-              gatewayResponse: paymentIntent,
+              gatewayPaymentId: paymentIntentData.latest_charge as string,
+              gatewayResponse: paymentIntentData,
             },
           });
           // Check if enrollment already exists
