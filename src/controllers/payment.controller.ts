@@ -1,36 +1,291 @@
 import { Request, Response } from 'express';
-import { paymentService } from '../services/payment.service';
+import { paymentService, PaymentError } from '../services/payment.service';
 
-export const createRazorpayOrder = async (req: Request, res: Response) => {
-  const { courseId } = req.params;
-  const order = await paymentService.createRazorpayOrder(courseId);
-  res.json(order);
+// STRIPE PAYMENT METHODS
+export const createStripePaymentIntent = async (req: Request, res: Response) => {
+  try {
+    const { courseId } = req.params;
+    const userId = (req as any).user.id;
+
+    const result = await paymentService.createStripePaymentIntent(courseId, userId);
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    if (error instanceof PaymentError) {
+      res.status(400).json({
+        success: false,
+        error: error.message,
+        status: error.status,
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+      });
+    }
+  }
 };
 
-export const captureRazorpayPayment = async (req: Request, res: Response) => {
-  const { paymentId, orderId } = req.body;
-  await paymentService.captureRazorpayPayment(orderId, paymentId);
-  res.json({ success: true });
+export const confirmStripePayment = async (req: Request, res: Response) => {
+  try {
+    const { transactionId, paymentIntentId } = req.body;
+
+    const result = await paymentService.confirmStripePayment(transactionId, paymentIntentId);
+    res.json({
+      success: true,
+      data: {
+        transaction: result.transaction,
+        enrollment: result.enrollment,
+      },
+    });
+  } catch (error) {
+    if (error instanceof PaymentError) {
+      res.status(400).json({
+        success: false,
+        error: error.message,
+        status: error.status,
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+      });
+    }
+  }
 };
 
+// PAYPAL PAYMENT METHODS
 export const createPayPalOrder = async (req: Request, res: Response) => {
-  const { courseId } = req.params;
-  const order = await paymentService.createPayPalOrder(courseId);
-  res.json(order);
+  try {
+    const { courseId } = req.params;
+    const userId = (req as any).user.id;
+
+    const result = await paymentService.createPayPalOrder(courseId, userId);
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    if (error instanceof PaymentError) {
+      res.status(400).json({
+        success: false,
+        error: error.message,
+        status: error.status,
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+      });
+    }
+  }
 };
 
 export const capturePayPalOrder = async (req: Request, res: Response) => {
-  const { orderId } = req.body;
-  const userId = (req as any).user.id;
-  const courseId = req.params.courseId;
-  const capture = await paymentService.capturePayPalOrder(orderId, userId, courseId);
-  res.json(capture);
+  try {
+    const { transactionId, orderId } = req.body;
+
+    const result = await paymentService.capturePayPalOrder(transactionId, orderId);
+    res.json({
+      success: true,
+      data: {
+        transaction: result.transaction,
+        enrollment: result.enrollment,
+      },
+    });
+  } catch (error) {
+    if (error instanceof PaymentError) {
+      res.status(400).json({
+        success: false,
+        error: error.message,
+        status: error.status,
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+      });
+    }
+  }
 };
 
-export const processGooglePay = async (req: Request, res: Response) => {
-  const { paymentToken } = req.body;
-  const userId = (req as any).user.id;
-  const courseId = req.params.courseId;
-  const result = await paymentService.processGooglePay(paymentToken, courseId, userId);
-  res.json(result);
+// GOOGLE PAY PAYMENT METHODS
+export const createGooglePayOrder = async (req: Request, res: Response) => {
+  try {
+    const { courseId } = req.params;
+    const userId = (req as any).user.id;
+
+    const result = await paymentService.createGooglePayOrder(courseId, userId);
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    if (error instanceof PaymentError) {
+      res.status(400).json({
+        success: false,
+        error: error.message,
+        status: error.status,
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+      });
+    }
+  }
+};
+
+export const processGooglePayPayment = async (req: Request, res: Response) => {
+  try {
+    const { transactionId, paymentToken } = req.body;
+
+    const result = await paymentService.processGooglePayPayment(transactionId, paymentToken);
+    res.json({
+      success: true,
+      data: {
+        transaction: result.transaction,
+        enrollment: result.enrollment,
+      },
+    });
+  } catch (error) {
+    if (error instanceof PaymentError) {
+      res.status(400).json({
+        success: false,
+        error: error.message,
+        status: error.status,
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+      });
+    }
+  }
+};
+
+// RAZORPAY PAYMENT METHODS
+export const createRazorpayOrder = async (req: Request, res: Response) => {
+  try {
+    const { courseId } = req.params;
+    const userId = (req as any).user.id;
+
+    const result = await paymentService.createRazorpayOrder(courseId, userId);
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    if (error instanceof PaymentError) {
+      res.status(400).json({
+        success: false,
+        error: error.message,
+        status: error.status,
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+      });
+    }
+  }
+};
+
+export const captureRazorpayPayment = async (req: Request, res: Response) => {
+  try {
+    const { transactionId, orderId, paymentId, signature } = req.body;
+
+    const result = await paymentService.captureRazorpayPayment(transactionId, orderId, paymentId, signature);
+    res.json({
+      success: true,
+      data: {
+        transaction: result.transaction,
+        enrollment: result.enrollment,
+      },
+    });
+  } catch (error) {
+    if (error instanceof PaymentError) {
+      res.status(400).json({
+        success: false,
+        error: error.message,
+        status: error.status,
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+      });
+    }
+  }
+};
+
+// UTILITY METHODS
+export const getTransactionById = async (req: Request, res: Response) => {
+  try {
+    const { transactionId } = req.params;
+
+    const transaction = await paymentService.getTransactionById(transactionId);
+    if (!transaction) {
+      res.status(404).json({
+        success: false,
+        error: 'Transaction not found',
+      });
+      return;
+    }
+
+    res.json({
+      success: true,
+      data: transaction,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+    });
+  }
+};
+
+export const getUserTransactions = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.id;
+
+    const transactions = await paymentService.getUserTransactions(userId);
+    res.json({
+      success: true,
+      data: transactions,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+    });
+  }
+};
+
+export const refundTransaction = async (req: Request, res: Response) => {
+  try {
+    const { transactionId } = req.params;
+    const { reason } = req.body;
+
+    const result = await paymentService.refundTransaction(transactionId, reason);
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    if (error instanceof PaymentError) {
+      res.status(400).json({
+        success: false,
+        error: error.message,
+        status: error.status,
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+      });
+    }
+  }
 };

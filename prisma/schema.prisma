@@ -37,9 +37,10 @@ model User {
   enrollments       Enrollment[]      // courses user bought
   wishlists         Wishlist[]        // courses user saved
   notes             Note[]            // lecture notes by user
+  transactions      Transaction[]     // payment transactions
 }
 
-// A “stream” or category for courses
+// A "stream" or category for courses
 model Stream {
   id      String   @id @default(cuid())
   name    String   @unique
@@ -75,6 +76,7 @@ model Course {
   wishlists        Wishlist[]
   modules          Module[]   // only for self-paced
   discounts        Discount[]
+  transactions     Transaction[] // payment transactions
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
 }
@@ -96,6 +98,7 @@ model Enrollment {
   userId     String
   course     Course   @relation(fields: [courseId], references: [id])
   courseId   String
+  transactionId String? @unique // Link to payment transaction (one-to-one)
   purchasedAt DateTime @default(now())
 
   @@unique([userId, courseId])
@@ -165,6 +168,46 @@ model Discount {
   createdAt  DateTime @default(now())
 }
 
+// Payment transactions
+model Transaction {
+  id            String           @id @default(cuid())
+  userId        String
+  courseId      String
+  amountCents   Int              // Amount in cents
+  currency      String           @default("USD")
+  paymentMethod PaymentMethod
+  status        TransactionStatus @default(PENDING)
+  gatewayOrderId String?         // Order ID from payment gateway
+  gatewayPaymentId String?       // Payment ID from payment gateway
+  gatewayResponse Json?          // Full response from payment gateway
+  errorMessage  String?          // Error message if payment failed
+  user          User             @relation(fields: [userId], references: [id])
+  course        Course           @relation(fields: [courseId], references: [id])
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([status])
+}
+
+// Enum for payment methods
+enum PaymentMethod {
+  PAYPAL
+  STRIPE
+  GOOGLE_PAY
+  RAZORPAY
+}
+
+// Enum for transaction status
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
 // Enum for course type
 enum CourseType {
   LIVE
@@ -175,9 +218,9 @@ enum CourseType {
 model Media {
   id         String   @id @default(cuid())
   key        String   @unique                  // S3 object key, e.g. "media/xyz.jpg"
-  type       String                             // “profile”, “thumbnail”, “lecture_video”, etc.
+  type       String                             // "profile", "thumbnail", "lecture_video", etc.
   entity     String?                            // name of the owning entity 
-  entityId   String?                            // the owning record’s ID
+  entityId   String?                            // the owning record's ID
   uploadedAt DateTime @default(now())
   linkedAt   DateTime?                          // when we attached it to an entity
 

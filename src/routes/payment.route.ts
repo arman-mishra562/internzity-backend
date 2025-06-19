@@ -2,55 +2,117 @@ import { Router } from 'express';
 import validateRequest from '../middlewares/validateRequest';
 import { isAuthenticated } from '../middlewares/auth.middleware';
 import {
-  createRazorpayOrder,
-  captureRazorpayPayment,
+  // Stripe
+  createStripePaymentIntent,
+  confirmStripePayment,
+  // PayPal
   createPayPalOrder,
   capturePayPalOrder,
-  processGooglePay,
+  // Google Pay
+  createGooglePayOrder,
+  processGooglePayPayment,
+  // Razorpay
+  createRazorpayOrder,
+  captureRazorpayPayment,
+  // Utility
+  getTransactionById,
+  getUserTransactions,
+  refundTransaction,
 } from '../controllers/payment.controller';
 import {
   paymentParamsSchema,
-  razorpaySchema,
-  paypalSchema,
-  googlePaySchema,
+  transactionParamsSchema,
+  stripeConfirmSchema,
+  paypalCaptureSchema,
+  googlePayProcessSchema,
+  razorpayCaptureSchema,
+  refundSchema,
 } from '../schemas/payment.schema';
 
 const router = Router();
 
-// Razorpay
+// STRIPE PAYMENT ROUTES
 router.post(
-  '/razorpay/:courseId',
+  '/stripe/:courseId',
   isAuthenticated,
   validateRequest({ params: paymentParamsSchema }),
-  createRazorpayOrder
-);
-router.post(
-  '/razorpay/capture',
-  isAuthenticated,
-  validateRequest({ body: razorpaySchema }),  
-  captureRazorpayPayment
+  createStripePaymentIntent
 );
 
-// PayPal
+router.post(
+  '/stripe/confirm',
+  isAuthenticated,
+  validateRequest({ body: stripeConfirmSchema }),
+  confirmStripePayment
+);
+
+// PAYPAL PAYMENT ROUTES
 router.post(
   '/paypal/:courseId',
   isAuthenticated,
   validateRequest({ params: paymentParamsSchema }),
   createPayPalOrder
 );
+
 router.post(
-  '/paypal/capture/:courseId',
+  '/paypal/capture',
   isAuthenticated,
-  validateRequest({ body: paypalSchema }),     
+  validateRequest({ body: paypalCaptureSchema }),
   capturePayPalOrder
 );
 
-// Google Pay
+// GOOGLE PAY PAYMENT ROUTES
 router.post(
   '/googlepay/:courseId',
   isAuthenticated,
-  validateRequest({ body: googlePaySchema }), 
-  processGooglePay
+  validateRequest({ params: paymentParamsSchema }),
+  createGooglePayOrder
+);
+
+router.post(
+  '/googlepay/process',
+  isAuthenticated,
+  validateRequest({ body: googlePayProcessSchema }),
+  processGooglePayPayment
+);
+
+// RAZORPAY PAYMENT ROUTES
+router.post(
+  '/razorpay/:courseId',
+  isAuthenticated,
+  validateRequest({ params: paymentParamsSchema }),
+  createRazorpayOrder
+);
+
+router.post(
+  '/razorpay/capture',
+  isAuthenticated,
+  validateRequest({ body: razorpayCaptureSchema }),
+  captureRazorpayPayment
+);
+
+// UTILITY ROUTES
+router.get(
+  '/transactions',
+  isAuthenticated,
+  getUserTransactions
+);
+
+router.get(
+  '/transactions/:transactionId',
+  isAuthenticated,
+  validateRequest({ params: transactionParamsSchema }),
+  getTransactionById
+);
+
+router.post(
+  '/transactions/:transactionId/refund',
+  isAuthenticated,
+  validateRequest({
+    params: transactionParamsSchema,
+    body: refundSchema
+  }),
+  refundTransaction
 );
 
 export default router;
