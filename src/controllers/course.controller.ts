@@ -88,7 +88,7 @@ export const getCourse: RequestHandler<{ id: string }> = async (
 					include: { instructor: { include: { user: true } } },
 				},
 				discounts: true,
-				modules: true
+				modules: true,
 			},
 		});
 		if (!course) {
@@ -102,7 +102,7 @@ export const getCourse: RequestHandler<{ id: string }> = async (
 			.sort((a, b) => b.percent - a.percent)[0];
 		const discountPercent = activeDiscount?.percent ?? 0;
 		const discountedPrice = Math.round(
-			(course.priceCents * (100 - discountPercent)) / 100
+			(course.priceCents * (100 - discountPercent)) / 100,
 		);
 
 		res.json({
@@ -131,17 +131,25 @@ export const getCourse: RequestHandler<{ id: string }> = async (
 
 export const createCourse: RequestHandler = async (req, res, next) => {
 	try {
-		const { title, description, type, priceCents, streamId, instructorIds, thumbnail_url, StartDate } =
-			req.body as {
-				title?: string;
-				description?: string;
-				type?: 'LIVE' | 'SELF_PACED';
-				priceCents?: number;
-				streamId?: string;
-				instructorIds?: string[];
-				thumbnail_url?: string;
-				StartDate?: string;
-			};
+		const {
+			title,
+			description,
+			type,
+			priceCents,
+			streamId,
+			instructorIds,
+			thumbnail_url,
+			StartDate,
+		} = req.body as {
+			title?: string;
+			description?: string;
+			type?: 'LIVE' | 'SELF_PACED';
+			priceCents?: number;
+			streamId?: string;
+			instructorIds?: string[];
+			thumbnail_url?: string;
+			StartDate?: string;
+		};
 
 		// Basic validation
 		if (
@@ -166,7 +174,8 @@ export const createCourse: RequestHandler = async (req, res, next) => {
 			startDateObj = new Date(StartDate);
 			if (isNaN(startDateObj.getTime())) {
 				res.status(400).json({
-					error: 'Invalid StartDate format. Please provide a valid ISO date string',
+					error:
+						'Invalid StartDate format. Please provide a valid ISO date string',
 				});
 				return;
 			}
@@ -191,16 +200,23 @@ export const createCourse: RequestHandler = async (req, res, next) => {
 		});
 
 		if (thumbnail_url) {
-			await prisma.media.update({
-				where: { key: thumbnail_url },
-				data: {
-					entity: 'Course',
-					entityId: course.id,
-					linkedAt: new Date(),
-				},
-			});
+			try {
+				await prisma.media.update({
+					where: { key: thumbnail_url },
+					data: {
+						entity: 'Course',
+						entityId: course.id,
+						linkedAt: new Date(),
+					},
+				});
+			} catch (err: any) {
+				if (err.code === 'P2025') {
+					res.status(404).json({ error: 'Media key not found in table' });
+					return;
+				}
+				throw err;
+			}
 		}
-		res.status(201).json(course);
 	} catch (err) {
 		next(err);
 	}

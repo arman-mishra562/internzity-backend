@@ -59,7 +59,7 @@ export const canManageDiscount: RequestHandler = async (
     if (!instrLink) {
       res
         .status(403)
-        .json({ error: "Forbidden: you're not a verified instructor for this course" });
+        .json({ error: 'Forbidden: you’re not a verified instructor for this course' });
       return;
     }
 

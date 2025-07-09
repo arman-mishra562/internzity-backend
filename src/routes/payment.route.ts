@@ -2,174 +2,55 @@ import { Router } from 'express';
 import validateRequest from '../middlewares/validateRequest';
 import { isAuthenticated } from '../middlewares/auth.middleware';
 import {
-  // Stripe
-  createStripePaymentIntent,
-  confirmStripePayment,
-  createStripePaymentIntentMulti,
-  confirmStripePaymentMulti,
-  // PayPal
-  createPayPalOrder,
-  capturePayPalOrder,
-  createPayPalOrderMulti,
-  capturePayPalOrderMulti,
-  // Google Pay
-  processGooglePayPayment,
-  processGooglePayPaymentMulti,
-  confirmGooglePayPaymentMulti,
-  // Razorpay
   createRazorpayOrder,
   captureRazorpayPayment,
-  createRazorpayOrderMulti,
-  captureRazorpayPaymentMulti,
-  // Utility
-  getTransactionById,
-  getUserTransactions,
-  refundTransaction,
+  createPayPalOrder,
+  capturePayPalOrder,
+  processGooglePay,
 } from '../controllers/payment.controller';
 import {
   paymentParamsSchema,
-  transactionParamsSchema,
-  stripeConfirmSchema,
-  paypalCaptureSchema,
-  googlePayProcessSchema,
-  razorpayCaptureSchema,
-  refundSchema,
-  multiCoursePaymentSchema,
+  razorpaySchema,
+  paypalSchema,
+  googlePaySchema,
 } from '../schemas/payment.schema';
 
 const router = Router();
 
-// STRIPE PAYMENT ROUTES
-router.post(
-  '/stripe/:courseId',
-  isAuthenticated,
-  validateRequest({ params: paymentParamsSchema }),
-  createStripePaymentIntent
-);
-
-router.post(
-  '/stripe/confirm',
-  isAuthenticated,
-  validateRequest({ body: stripeConfirmSchema }),
-  confirmStripePayment
-);
-
-router.post(
-  '/stripe/multi',
-  isAuthenticated,
-  validateRequest({ body: multiCoursePaymentSchema }),
-  createStripePaymentIntentMulti
-);
-
-router.post(
-  '/stripe/confirm-multi',
-  isAuthenticated,
-  validateRequest({ body: stripeConfirmSchema }),
-  confirmStripePaymentMulti
-);
-
-// PAYPAL PAYMENT ROUTES
-router.post(
-  '/paypal/:courseId',
-  isAuthenticated,
-  validateRequest({ params: paymentParamsSchema }),
-  createPayPalOrder
-);
-
-router.post(
-  '/paypal/capture',
-  isAuthenticated,
-  validateRequest({ body: paypalCaptureSchema }),
-  capturePayPalOrder
-);
-
-router.post(
-  '/paypal/multi',
-  isAuthenticated,
-  validateRequest({ body: multiCoursePaymentSchema }),
-  createPayPalOrderMulti
-);
-
-router.post(
-  '/paypal/capture-multi',
-  isAuthenticated,
-  validateRequest({ body: paypalCaptureSchema }),
-  capturePayPalOrderMulti
-);
-
-// GOOGLE PAY PAYMENT ROUTES
-router.post(
-  '/googlepay/process',
-  isAuthenticated,
-  validateRequest({ body: googlePayProcessSchema }),
-  processGooglePayPayment
-);
-
-router.post(
-  '/googlepay/process-multi',
-  isAuthenticated,
-  validateRequest({ body: googlePayProcessSchema }),
-  processGooglePayPaymentMulti
-);
-
-router.post(
-  '/googlepay/confirm-multi',
-  isAuthenticated,
-  validateRequest({ body: stripeConfirmSchema }),
-  confirmGooglePayPaymentMulti
-);
-
-// RAZORPAY PAYMENT ROUTES
+// Razorpay
 router.post(
   '/razorpay/:courseId',
   isAuthenticated,
   validateRequest({ params: paymentParamsSchema }),
   createRazorpayOrder
 );
-
 router.post(
   '/razorpay/capture',
   isAuthenticated,
-  validateRequest({ body: razorpayCaptureSchema }),
+  validateRequest({ body: razorpaySchema }),  
   captureRazorpayPayment
 );
 
+// PayPal
 router.post(
-  '/razorpay/multi',
+  '/paypal/:courseId',
   isAuthenticated,
-  validateRequest({ body: multiCoursePaymentSchema }),
-  createRazorpayOrderMulti
+  validateRequest({ params: paymentParamsSchema }),
+  createPayPalOrder
 );
-
 router.post(
-  '/razorpay/capture-multi',
+  '/paypal/capture/:courseId',
   isAuthenticated,
-  validateRequest({ body: razorpayCaptureSchema }),
-  captureRazorpayPaymentMulti
+  validateRequest({ body: paypalSchema }),     
+  capturePayPalOrder
 );
 
-// UTILITY ROUTES
-router.get(
-  '/transactions',
-  isAuthenticated,
-  getUserTransactions
-);
-
-router.get(
-  '/transactions/:transactionId',
-  isAuthenticated,
-  validateRequest({ params: transactionParamsSchema }),
-  getTransactionById
-);
-
+// Google Pay
 router.post(
-  '/transactions/:transactionId/refund',
+  '/googlepay/:courseId',
   isAuthenticated,
-  validateRequest({
-    params: transactionParamsSchema,
-    body: refundSchema
-  }),
-  refundTransaction
+  validateRequest({ body: googlePaySchema }), 
+  processGooglePay
 );
 
 export default router;

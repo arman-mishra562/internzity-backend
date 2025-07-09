@@ -1,4 +1,3 @@
-// src/controllers/media.controller.ts
 import { RequestHandler } from 'express';
 import { mediaService } from '../services/media.service';
 
@@ -13,17 +12,17 @@ export const uploadMedia: RequestHandler = async (req, res, next) => {
 		const { buffer, originalname, mimetype, fieldname } = req.file;
 
 		const typeMap: Record<string, string> = {
-      profilePic: 'profile',
-      thumbnail: 'thumbnail',
-      lectureVideo: 'lecture_video',
-    };
-    const mediaType = typeMap[fieldname] || 'other';
+			profilePic: 'profile',
+			thumbnail: 'thumbnail',
+			lectureVideo: 'lecture_video',
+		};
+		const mediaType = typeMap[fieldname] || 'other';
 
 		const { key, unsignedUrl } = await mediaService.upload(
 			buffer,
 			originalname,
 			mimetype,
-			mediaType
+			mediaType,
 		);
 
 		// Respond with the S3 key (to store in your DB) and an unsigned URL for immediate preview
@@ -33,7 +32,7 @@ export const uploadMedia: RequestHandler = async (req, res, next) => {
 	}
 };
 
-export const getSignedMediaUrl: RequestHandler = (req, res, next) => {
+export const getSignedMediaUrl: RequestHandler = async (req, res, next) => {
 	try {
 		const keyParam = req.query.key;
 		// Narrow to a single string
@@ -43,7 +42,7 @@ export const getSignedMediaUrl: RequestHandler = (req, res, next) => {
 				.json({ error: 'Missing or invalid `key` query parameter' });
 			return;
 		}
-		const signedUrl = mediaService.getSignedUrl(keyParam);
+		const signedUrl = await mediaService.getSignedUrl(keyParam);
 		res.json({ url: signedUrl });
 	} catch (err) {
 		next(err);
