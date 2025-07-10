@@ -66,6 +66,7 @@ export const listCourses: RequestHandler = async (req, res, next) => {
 				priceCents: basePrice,
 				discountedPrice,
 				discountPercent,
+				priceCountry: country, // add this
 				stream: c.stream,
 				instructors: c.instructors.map((ci) => ({
 					id: ci.instructor.id,
@@ -131,6 +132,7 @@ export const getCourse: RequestHandler<{ id: string }> = async (
 			priceCents: basePrice,
 			discountedPrice,
 			discountPercent,
+			priceCountry: country, // add this
 			stream: course.stream,
 			instructors: course.instructors.map((ci) => ({
 				id: ci.instructor.id,
