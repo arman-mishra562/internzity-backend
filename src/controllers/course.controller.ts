@@ -4,6 +4,15 @@ import { getClientIP, getCountryFromIP } from '../utils/geolocation';
 import { createStripeCourseSession } from '../services/stripe.service';
 import { createCashfreeCourseSession } from '../services/cashfree.service';
 
+// Utility to get the correct price for a course based on country
+function getCoursePriceForCountry(course: any, country: string): { price: number, priceCountry: string } {
+	if (Array.isArray(course.coursePrices)) {
+		const countryPrice = course.coursePrices.find((p: any) => (p.country || '').toUpperCase() === country.toUpperCase());
+		if (countryPrice) return { price: countryPrice.priceCents, priceCountry: country };
+	}
+	return { price: course.priceCents, priceCountry: 'US' };
+}
+
 export const listStreams: RequestHandler = async (_req, res, next) => {
 	try {
 		const streams = await prisma.stream.findMany();
@@ -49,9 +58,7 @@ export const listCourses: RequestHandler = async (req, res, next) => {
 				.filter((d) => !d.validUntil || d.validUntil > now)
 				.sort((a, b) => b.percent - a.percent)[0];
 			const discountPercent = active?.percent ?? 0;
-			// Find country-specific price
-			const countryPrice = c.coursePrices.find((p) => p.country === country);
-			const basePrice = countryPrice ? countryPrice.priceCents : c.priceCents;
+			const { price: basePrice, priceCountry } = getCoursePriceForCountry(c, country);
 			const discountedPrice = Math.round(
 				(basePrice * (100 - discountPercent)) / 100,
 			);
@@ -66,7 +73,7 @@ export const listCourses: RequestHandler = async (req, res, next) => {
 				priceCents: basePrice,
 				discountedPrice,
 				discountPercent,
-				priceCountry: country, // add this
+				priceCountry,
 				stream: c.stream,
 				instructors: c.instructors.map((ci) => ({
 					id: ci.instructor.id,
@@ -108,15 +115,12 @@ export const getCourse: RequestHandler<{ id: string }> = async (
 			res.status(404).json({ error: 'Course not found' });
 			return;
 		}
-		// Calculate discount
 		const now = new Date();
 		const activeDiscount = course.discounts
 			.filter((d) => !d.validUntil || d.validUntil > now)
 			.sort((a, b) => b.percent - a.percent)[0];
 		const discountPercent = activeDiscount?.percent ?? 0;
-		// Find country-specific price
-		const countryPrice = course.coursePrices.find((p) => p.country === country);
-		const basePrice = countryPrice ? countryPrice.priceCents : course.priceCents;
+		const { price: basePrice, priceCountry } = getCoursePriceForCountry(course, country);
 		const discountedPrice = Math.round(
 			(basePrice * (100 - discountPercent)) / 100,
 		);
@@ -132,7 +136,7 @@ export const getCourse: RequestHandler<{ id: string }> = async (
 			priceCents: basePrice,
 			discountedPrice,
 			discountPercent,
-			priceCountry: country, // add this
+			priceCountry,
 			stream: course.stream,
 			instructors: course.instructors.map((ci) => ({
 				id: ci.instructor.id,
