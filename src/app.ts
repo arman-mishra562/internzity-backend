@@ -11,11 +11,11 @@ import moduleRoutes from './routes/module.route';
 import lectureRoutes from './routes/lecture.route';
 import assignmentRoutes from './routes/assignment.route';
 import noteRoutes from './routes/note.route';
-import paymentRoutes from './routes/payment.route';
 import discountRoutes from './routes/discount.route';
 import homeRoutes from './routes/home.route';
 import streakRoutes from './routes/streak.route';
 import mediaRouter from './routes/media.route';
+import webhookRoutes from './routes/webhook.route';
 import './utils/mediaCleanup';
 
 dotenv.config();
@@ -38,11 +38,14 @@ app.use('/api/modules', moduleRoutes);
 app.use('/api/lectures', lectureRoutes);
 app.use('/api/assignments', assignmentRoutes);
 app.use('/api/notes', noteRoutes);
-app.use('/api/payments', paymentRoutes);
 app.use('/api/discounts', discountRoutes);
 app.use('/api/home', homeRoutes);
 app.use('/api/user/streak', streakRoutes);
 app.use('/api/media', mediaRouter);
+// Stripe webhook (must use raw body parser)
+app.use('/api/webhook/stripe', express.raw({ type: 'application/json' }), webhookRoutes);
+// Cashfree webhook (use JSON parser)
+app.use('/api/webhook/cashfree', express.json(), webhookRoutes);
 
 // ——— 404 Handler ———
 app.use((req, res) => {

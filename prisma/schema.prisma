@@ -37,6 +37,7 @@ model User {
   enrollments       Enrollment[]      // courses user bought
   wishlists         Wishlist[]        // courses user saved
   notes             Note[]            // lecture notes by user
+  payments          Payment[]         // payments made by user
 }
 
 // A “stream” or category for courses
@@ -70,11 +71,13 @@ model Course {
   priceCents       Int        // price in cents
   stream           Stream     @relation(fields: [streamId], references: [id])
   streamId         String
+  coursePrices     CoursePrice[] @relation("CourseToCoursePrice")
   instructors      CourseInstructor[]
   enrollments      Enrollment[]
   wishlists        Wishlist[]
   modules          Module[]   // only for self-paced
   discounts        Discount[]
+  payments         Payment[]  // payments for this course
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
 }
@@ -182,4 +185,32 @@ model Media {
   linkedAt   DateTime?                          // when we attached it to an entity
 
   @@index([type])
+}
+
+model CoursePrice {
+  id         String   @id @default(cuid())
+  courseId   String?
+  course     Course?   @relation("CourseToCoursePrice", fields: [courseId], references: [id])
+  country    String   // ISO country code, e.g., 'IN', 'US'
+  priceCents Int      // price in cents for this country
+
+  @@unique([courseId, country])
+}
+
+model Payment {
+  id                String   @id @default(cuid())
+  userId            String
+  courseId          String
+  amount            Float
+  currency          String
+  gateway           String
+  gatewayPaymentId  String?
+  status            String   // e.g., 'PENDING', 'PAID', 'FAILED'
+  metadata          Json?
+  expiresAt         DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id])
+  course Course @relation(fields: [courseId], references: [id])
 }

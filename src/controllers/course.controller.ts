@@ -1,5 +1,8 @@
 import { RequestHandler } from 'express';
 import prisma from '../config/prisma';
+import { getClientIP, getCountryFromIP } from '../utils/geolocation';
+import { createStripeCourseSession } from '../services/stripe.service';
+import { createCashfreeCourseSession } from '../services/cashfree.service';
 
 export const listStreams: RequestHandler = async (_req, res, next) => {
 	try {
@@ -24,9 +27,11 @@ export const createStream: RequestHandler = async (req, res, next) => {
 	}
 };
 
-export const listCourses: RequestHandler = async (_req, res, next) => {
+export const listCourses: RequestHandler = async (req, res, next) => {
 	try {
 		const now = new Date();
+		const ip = getClientIP(req);
+		const { country } = await getCountryFromIP(ip);
 		const courses = await prisma.course.findMany({
 			include: {
 				stream: true,
@@ -35,6 +40,7 @@ export const listCourses: RequestHandler = async (_req, res, next) => {
 				},
 				discounts: true,
 				modules: true,
+				coursePrices: true,
 			},
 		});
 
@@ -43,8 +49,11 @@ export const listCourses: RequestHandler = async (_req, res, next) => {
 				.filter((d) => !d.validUntil || d.validUntil > now)
 				.sort((a, b) => b.percent - a.percent)[0];
 			const discountPercent = active?.percent ?? 0;
+			// Find country-specific price
+			const countryPrice = c.coursePrices.find((p) => p.country === country);
+			const basePrice = countryPrice ? countryPrice.priceCents : c.priceCents;
 			const discountedPrice = Math.round(
-				(c.priceCents * (100 - discountPercent)) / 100,
+				(basePrice * (100 - discountPercent)) / 100,
 			);
 			return {
 				id: c.id,
@@ -54,7 +63,7 @@ export const listCourses: RequestHandler = async (_req, res, next) => {
 				type: c.type,
 				StartDate: c.StartDate,
 				isPopular: c.isPopular,
-				priceCents: c.priceCents,
+				priceCents: basePrice,
 				discountedPrice,
 				discountPercent,
 				stream: c.stream,
@@ -80,6 +89,8 @@ export const getCourse: RequestHandler<{ id: string }> = async (
 ) => {
 	try {
 		const { id } = req.params;
+		const ip = getClientIP(req);
+		const { country } = await getCountryFromIP(ip);
 		const course = await prisma.course.findUnique({
 			where: { id },
 			include: {
@@ -89,6 +100,7 @@ export const getCourse: RequestHandler<{ id: string }> = async (
 				},
 				discounts: true,
 				modules: true,
+				coursePrices: true,
 			},
 		});
 		if (!course) {
@@ -101,8 +113,11 @@ export const getCourse: RequestHandler<{ id: string }> = async (
 			.filter((d) => !d.validUntil || d.validUntil > now)
 			.sort((a, b) => b.percent - a.percent)[0];
 		const discountPercent = activeDiscount?.percent ?? 0;
+		// Find country-specific price
+		const countryPrice = course.coursePrices.find((p) => p.country === country);
+		const basePrice = countryPrice ? countryPrice.priceCents : course.priceCents;
 		const discountedPrice = Math.round(
-			(course.priceCents * (100 - discountPercent)) / 100,
+			(basePrice * (100 - discountPercent)) / 100,
 		);
 
 		res.json({
@@ -113,7 +128,7 @@ export const getCourse: RequestHandler<{ id: string }> = async (
 			type: course.type,
 			StartDate: course.StartDate,
 			isPopular: course.isPopular,
-			priceCents: course.priceCents,
+			priceCents: basePrice,
 			discountedPrice,
 			discountPercent,
 			stream: course.stream,
@@ -228,17 +243,14 @@ export const enrollCourse: RequestHandler<{ id: string }> = async (
 	next,
 ) => {
 	try {
-		// 1) Ensure authenticated
 		if (!req.user?.id) {
 			res.status(401).json({ error: 'Unauthorized' });
 			return;
 		}
 		const userId = req.user.id;
-
-		// 2) Param validation
 		const { id: courseId } = req.params;
+		const { paymentMethod } = req.body as { paymentMethod?: string };
 
-		// 3) Check existing enrollment
 		const existing = await prisma.enrollment.findUnique({
 			where: { userId_courseId: { userId, courseId } },
 		});
@@ -247,11 +259,37 @@ export const enrollCourse: RequestHandler<{ id: string }> = async (
 			return;
 		}
 
-		// 4) Enroll
-		const enrollment = await prisma.enrollment.create({
-			data: { userId, courseId },
-		});
-		res.status(201).json(enrollment);
+		if (!paymentMethod) {
+			res.status(400).json({ error: 'Missing paymentMethod' });
+			return;
+		}
+
+		let paymentUrl: string | undefined;
+		if (paymentMethod === 'stripe') {
+			const url = await createStripeCourseSession(req, courseId, req.user);
+			paymentUrl = url || undefined;
+		} else if (paymentMethod === 'cashfree') {
+			const result = await createCashfreeCourseSession(userId, courseId);
+			if (result.error) {
+				res.status(400).json({ error: result.error });
+				return;
+			}
+			if (result.message) {
+				res.status(200).json({ message: result.message, data: result.data });
+				return;
+			}
+			if (result.sessionId) {
+				res.status(200).json({ sessionId: result.sessionId });
+				return;
+			}
+			res.status(500).json({ error: 'Unknown error creating Cashfree session' });
+			return;
+		} else {
+			res.status(400).json({ error: 'Invalid paymentMethod' });
+			return;
+		}
+
+		res.status(200).json({ paymentUrl });
 	} catch (err) {
 		next(err);
 	}
