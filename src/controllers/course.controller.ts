@@ -155,6 +155,7 @@ export const createCourse: RequestHandler = async (req, res, next) => {
 			instructorIds,
 			thumbnail_url,
 			StartDate,
+			coursePrices, // [{ country: string, priceCents: number }]
 		} = req.body as {
 			title?: string;
 			description?: string;
@@ -164,6 +165,7 @@ export const createCourse: RequestHandler = async (req, res, next) => {
 			instructorIds?: string[];
 			thumbnail_url?: string;
 			StartDate?: string;
+			coursePrices?: { country: string; priceCents: number }[];
 		};
 
 		// Basic validation
@@ -214,6 +216,21 @@ export const createCourse: RequestHandler = async (req, res, next) => {
 			include: { instructors: true },
 		});
 
+		// Create country-specific prices if provided
+		if (Array.isArray(coursePrices) && coursePrices.length > 0) {
+			await prisma.$transaction(
+				coursePrices.map((cp) =>
+					prisma.coursePrice.create({
+						data: {
+							courseId: course.id,
+							country: cp.country,
+							priceCents: cp.priceCents,
+						},
+					})
+				)
+			);
+		}
+
 		if (thumbnail_url) {
 			try {
 				await prisma.media.update({
@@ -232,6 +249,8 @@ export const createCourse: RequestHandler = async (req, res, next) => {
 				throw err;
 			}
 		}
+
+		res.status(201).json(course);
 	} catch (err) {
 		next(err);
 	}
